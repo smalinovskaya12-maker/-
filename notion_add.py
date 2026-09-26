@@ -50,7 +50,8 @@ def call(method, path, body=None):
 
 def page_id(ref):
     """Принимает id или ссылку на страницу Notion, возвращает id."""
-    m = re.search(r"([0-9a-f]{32})", ref.replace("-", ""))
+    # id — последние 32 hex-символа пути ссылки (до ?и #)
+    m = re.search(r"([0-9a-f]{32})$", re.split(r"[?#]", ref)[0].replace("-", "").lower())
     if not m:
         sys.exit(f"Не удалось найти id страницы в: {ref}")
     return m.group(1)
