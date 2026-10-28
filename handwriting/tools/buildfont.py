@@ -10,6 +10,7 @@ for k,v in meta.items():
     elif k.startswith('num_'): rows['num'].append(k)
 short={'ua1':'г е є ж и к л м н','ua2':'о п с т х ч ш ь ю я','en1':'a c e m n o','en2':'r s u v w x z'}
 font={}
+ASC={'б':1.6,'в':1.6,'ф':1.6,'й':1.45,'і':1.45,'ї':1.45,'ґ':1.3,'b':1.6,'d':1.6,'f':1.6,'h':1.6,'k':1.6,'l':1.6,'i':1.45,'j':1.45,'t':1.35}
 def svgpath(name): return open(f'out/svg/{name}.svg').read().split(' d="')[1].split('"')[0]
 fits={}
 for r,names in rows.items():
@@ -29,7 +30,15 @@ for r,names in rows.items():
     if r=='num': xh=fits['num'][2]/1.3   # digits ~1.3 x-height tall
     for n in names:
         v=meta[n]; cx=v['x']+v['w']/2; base=a*cx+b
-        font[n]=dict(file=f'{n}.svg',W=v['w'],H=v['h'],bt=base-v['y'],u=1/xh,ink=v['w']-2*PAD)
+        bt=base-v['y']; above=max(bt-PAD,1)
+        ch=n.split('_',1)[1]
+        if r=='num': ratio=1.45
+        elif ch in ASC: ratio=ASC[ch]
+        else: ratio=1.0
+        u=ratio/above
+        # guard: if a short letter sits oddly (tiny 'above'), fall back to row scale
+        if not (0.6/xh < u < 1.6/xh): u=1/xh
+        font[n]=dict(file=f'{n}.svg',W=v['w'],H=v['h'],bt=bt,u=u,ink=v['w']-2*PAD)
 # split num_10 -> num_0 (right part) from png mask
 im=cv2.imread('out/png/num_10.png',-1)[...,3]>100
 cols=im.sum(0); inkc=np.nonzero(cols)[0]

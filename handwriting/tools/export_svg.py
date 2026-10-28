@@ -7,8 +7,8 @@ def inner(n,color):
     s=open('font/'+F[n]['file']).read()
     s=s.replace('#1E2A8C',color)
     return re.sub(r'^<svg[^>]*>','',s).replace('</svg>','')
-def g(n,x,y,s,color,label=None):
-    return f'<g id="{label or n}" transform="translate({x:.1f} {y:.1f}) scale({s:.4f})">{inner(n,color)}</g>'
+def g(n,x,y,s,color,label=None,sx=1):
+    return f'<g id="{label or n}" transform="translate({x:.1f} {y:.1f}) scale({s*sx:.4f} {s:.4f})">{inner(n,color)}</g>'
 for theme in ['dark','white']:
     t=TH[theme]
     for i,l in enumerate(L):
@@ -18,7 +18,7 @@ for theme in ['dark','white']:
             sv=oval_svg(ow,oh,0.17*xh,t['acc'],seed=int(x))
             body=re.sub(r'^<svg[^>]*>','',sv).replace('</svg>','')
             o.append(f'<g id="highlight" transform="translate({ox:.1f} {oy:.1f})">{body}</g>')
-        o.append('<g id="text">'+''.join(g(q['g'],q['x'],q['y'],q['s'],t['ink']) for q in l['glyphs'])+'</g>')
+        o.append('<g id="text">'+''.join(g(q['g'],q['x'],q['y'],q['s'],t['ink'],sx=q.get('sx',1)) for q in l['glyphs'])+'</g>')
         for d in l['deco']:
             f=F[d['g']]; s=d['w']/f['W']
             o.append(g(d['g'],d['x'],d['y'],s,t['ink'] if d['g']=='sym_arrow_right' else t['acc'],label='swipe arrow' if d['g']=='sym_arrow_right' else 'check'))

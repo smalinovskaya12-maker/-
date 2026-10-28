@@ -10,6 +10,12 @@ def gname(ch):
 W,H=1080,1350
 LINE=66           # notebook line pitch
 LEFT=150; RIGHT=W-70
+WIDE=set('шщюмжтф')
+def SX(gn):
+    g=F[gn]
+    if not gn.startswith(('ua_','en_')): return 1.0
+    cw=(g['cr']-g['cl'])*g['u']; mx=1.7 if gn[3:] in WIDE else 1.3
+    return max(0.6,min(1.0,mx/cw))
 TRACK=0.04; SPACE=1.15
 def tokens(text):
     # returns words: list of (word, highlighted)
@@ -32,7 +38,7 @@ def wordwidth(parts,xh):
     for ch,h in parts:
         if ch=='}': continue
         if ch=='\u00a0': w+=SPACE*xh; continue
-        g=F[gname(ch)]; s=xh*g['u']; w+=(g['cr']-g['cl'])*s+TRACK*xh
+        gn=gname(ch); g=F[gn]; s=xh*g['u']; w+=(g['cr']-g['cl'])*s*SX(gn)+TRACK*xh
     return w-TRACK*xh if parts else 0
 def set_text(text,xh,x0,width,y0,pitch,glyphs,hls,maxlines=99):
     y=y0; lines=0
@@ -49,10 +55,11 @@ def set_text(text,xh,x0,width,y0,pitch,glyphs,hls,maxlines=99):
                     x+=SPACE*xh; continue
                 gn=gname(ch); g=F[gn]; s=xh*g['u']
                 # small jitter for natural look
-                jy=random.uniform(-0.025,0.025)*xh
-                glyphs.append(dict(g=gn,x=round(x-g['cl']*s,1),y=round(y-g['bt']*s+jy,1),s=round(s,4)))
-                if h: hls.append((x,y,(g['cr']-g['cl'])*s,xh))
-                x+=(g['cr']-g['cl'])*s+TRACK*xh
+                jy=0
+                sx=SX(gn)
+                glyphs.append(dict(g=gn,x=round(x-g['cl']*s*sx,1),y=round(y-g['bt']*s+jy,1),s=round(s,4),sx=round(sx,3)))
+                if h: hls.append((x,y,(g['cr']-g['cl'])*s*sx,xh))
+                x+=(g['cr']-g['cl'])*s*sx+TRACK*xh
             x+=SPACE*xh
         y+=pitch*(1 if pi==len(tokens(text))-1 else 2); lines+=2
     return y

@@ -30,7 +30,7 @@ def page(theme,i,l):
         o.append(f'<img src="data:image/svg+xml;base64,{base64.b64encode(sv.encode()).decode()}" style="left:{ox}px;top:{oy}px;width:{ow:.0f}px;height:{oh:.0f}px">')
     for g in l['glyphs']:
         f=F[g['g']]
-        o.append(f'<img src="{uri(g["g"],t["ink"])}" style="left:{g["x"]}px;top:{g["y"]}px;width:{f["W"]*g["s"]}px;height:{f["H"]*g["s"]}px">')
+        o.append(f'<img src="{uri(g["g"],t["ink"],True)}" style="left:{g["x"]}px;top:{g["y"]}px;width:{f["W"]*g["s"]*g.get("sx",1)}px;height:{f["H"]*g["s"]}px">')
     for d in l['deco']:
         f=F[d['g']]; s=d['w']/f['W']
         o.append(f'<img src="{uri(d["g"],t["acc"] if d["g"]!="sym_arrow_right" else t["ink"])}" style="left:{d["x"]}px;top:{d["y"]}px;width:{d["w"]}px;height:{f["H"]*s}px">')
