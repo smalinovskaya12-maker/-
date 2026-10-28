@@ -8,12 +8,13 @@ def gname(ch):
     if 'a'<=ch<='z': return 'en_'+ch
     return 'ua_'+ch
 W,H=1080,1350
-LINE=58           # notebook line pitch
+LINE=66           # notebook line pitch
 LEFT=150; RIGHT=W-70
-TRACK=0.2; SPACE=0.78
+TRACK=0.04; SPACE=1.15
 def tokens(text):
     # returns words: list of (word, highlighted)
     out=[];hl=False
+    text=text.replace(' → ','\u00a0→\u00a0')
     text=re.sub(r'\{[^}]*\}',lambda m:m.group(0).replace(' ','\u00a0'),text)
     for para in text.split('\n'):
         words=[]
@@ -48,7 +49,7 @@ def set_text(text,xh,x0,width,y0,pitch,glyphs,hls,maxlines=99):
                     x+=SPACE*xh; continue
                 gn=gname(ch); g=F[gn]; s=xh*g['u']
                 # small jitter for natural look
-                jy=random.uniform(-0.04,0.04)*xh
+                jy=random.uniform(-0.025,0.025)*xh
                 glyphs.append(dict(g=gn,x=round(x-g['cl']*s,1),y=round(y-g['bt']*s+jy,1),s=round(s,4)))
                 if h: hls.append((x,y,(g['cr']-g['cl'])*s,xh))
                 x+=(g['cr']-g['cl'])*s+TRACK*xh
@@ -68,23 +69,23 @@ def layout(i,sl):
     glyphs=[];hls=[];deco=[]
     kind=sl.get('kind','prompt')
     if kind=='cover':
-        y=LINE*5; xh=36
+        y=LINE*4; xh=38
         y=set_text(sl['title'],xh,LEFT,RIGHT-LEFT,y,LINE*2,glyphs,hls)
         y+=LINE
         set_text(sl['body'],28,LEFT,RIGHT-LEFT,y,LINE,glyphs,hls)
         bxh=xh
     elif kind=='final':
-        y=LINE*5; xh=40
+        y=LINE*4; xh=40
         y=set_text(sl['title'],xh,LEFT,RIGHT-LEFT,y,LINE*2,glyphs,hls)
         y+=LINE
         set_text(sl['body'],27,LEFT,RIGHT-LEFT,y,LINE,glyphs,hls)
         bxh=27
     else:
-        y=LINE*4; xh=36
+        y=LINE*4; xh=34
         y=set_text(sl['title'],xh,LEFT,RIGHT-LEFT,y,LINE*2,glyphs,hls)
         y+=LINE
-        set_text(sl['body'],24,LEFT,RIGHT-LEFT,y,LINE,glyphs,hls)
-        bxh=24
+        set_text(sl['body'],23,LEFT,RIGHT-LEFT,y,LINE,glyphs,hls)
+        bxh=23
     boxes=merge_hls(hls,bxh)
     # page counter top-right, handwritten
     cnt=f"{i+1}/{len(SLIDES)}"; cg=[]; cxh=22
@@ -93,8 +94,8 @@ def layout(i,sl):
     for g in cg: g['x']=round(g['x']+RIGHT-wmax,1)
     glyphs+=cg
     deco=[]
-    if i<len(SLIDES)-1: deco.append(dict(g='sym_arrow_right',x=RIGHT-150,y=H-LINE*2-28,w=150))
-    else: deco.append(dict(g='sym_check',x=RIGHT-90,y=H-LINE*3-60,w=80))
+    if 0<i<len(SLIDES)-1: deco.append(dict(g='sym_arrow_right',x=RIGHT-150,y=H-LINE*2-28,w=150))
+    if i==len(SLIDES)-1: deco.append(dict(g='sym_check',x=RIGHT-90,y=H-LINE*3-60,w=80))
     return dict(deco=deco,glyphs=glyphs,ovals=[[round(a,1),round(b,1),round(c,1),bxh] for a,b,c in boxes],maxy=max(g['y']+F[g['g']]['H']*g['s'] for g in glyphs))
 if __name__=='__main__':
     L=[layout(i,s) for i,s in enumerate(SLIDES)]
