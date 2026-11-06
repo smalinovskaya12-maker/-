@@ -1,5 +1,4 @@
 DOC=[
-('name','Sofiia Malynovska'),
 ('title','Homework 4'),
 ('h1','1. Problems and applications'),
 ('h2','1.'),
