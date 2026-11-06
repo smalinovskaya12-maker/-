@@ -1,5 +1,5 @@
 import json,re,random,sys,math
-sys.path.insert(0,'hw'); from text import DOC
+sys.path.insert(0,'hw'); import importlib,os; DOC=importlib.import_module(os.environ.get('HWDOC','text')).DOC; OUT=os.environ.get('HWOUT','hw/out')
 FO=json.load(open('font/font.json')); F5=json.load(open('font5/font2.json')); F2=json.load(open('font2/font2.json'))
 SWAP=set('dnptbg')
 WIDE=set('шщюмжтф')
@@ -73,8 +73,54 @@ def underline(x0,x1):
         t=i/n; pts.append((x0+(x1-x0)*t, y+14+random.uniform(-2.5,2.5)+t*random.uniform(-3,3)))
     d='M'+' L'.join(f'{a:.1f} {b:.1f}' for a,b in pts)
     pages[-1].append(('u',d))
+def wline(p0,p1,dash=False,w=5):
+    (x0,y0),(x1,y1)=p0,p1; L=math.hypot(x1-x0,y1-y0); n=max(2,int(L/40))
+    nx,ny=-(y1-y0)/L,(x1-x0)/L; ph=random.uniform(0,6); amp=random.uniform(1.5,3.5)
+    pts=[(x0+(x1-x0)*t+nx*amp*math.sin(ph+t*random.uniform(2,4)),y0+(y1-y0)*t+ny*amp*math.sin(ph+t*3)) for t in [i/n for i in range(n+1)]]
+    pages[-1].append(('u','M'+' L'.join(f'{a:.1f} {b:.1f}' for a,b in pts),dash,w))
+def arrowhead(p,dx,dy,s=18):
+    L=math.hypot(dx,dy); dx,dy=dx/L,dy/L
+    for a in (2.6,-2.6):
+        c,sn=math.cos(a),math.sin(a); wline(p,(p[0]+s*(dx*c-dy*sn),p[1]+s*(dx*sn+dy*c)))
+def label(t,x,yb,xh=26):
+    global y
+    keep=y; y=yb; put(t,x,xh,lambda _:0); y=keep
+def inter(a,b):
+    (x1,y1,x2,y2),(x3,y3,x4,y4)=a,b
+    d=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4)
+    t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/d
+    return x1+t*(x2-x1),y1+t*(y2-y1)
+def graph(kind):
+    global y
+    Hg=CELL*9; Wg=CELL*12
+    if y+Hg+CELL>BOTTOM: pages.append([]); y=TOP
+    ox=LEFT+CELL*3; oy=y+CELL*0.5+Hg
+    T=lambda u,v:(ox+u*Wg,oy-v*Hg)
+    wline(T(0,0),T(0,1.05)); arrowhead(T(0,1.05),0,-1)
+    wline(T(0,0),T(1.05,0)); arrowhead(T(1.05,0),1,0)
+    label('P',ox-CELL*0.9,oy-Hg*1.0); label('Q',ox+Wg*1.07,oy+CELL*0.75)
+    D=(0.08,0.92,0.9,0.12)
+    SA=(0.12,0.08,0.8,0.9); SB=(-0.12,0.08,0.56,0.9)   # SB = left-shifted
+    names=('S1','S2','E1','E2','P1','P2','Q1','Q2') if kind==1 else ('S3','S2','E3','E2','P3','P2','Q3','Q2')
+    def curve(L,name):
+        u1,v1,u2,v2=L
+        if u1<0: v1=v1+(v2-v1)*(-u1)/(u2-u1); u1=0
+        wline(T(u1,v1),T(u2,v2)); label(name,T(u2,v2)[0]+8,T(u2,v2)[1]+10)
+    wline(T(*D[:2]),T(*D[2:])); label('D',T(*D[2:])[0]+8,T(*D[2:])[1]+30)
+    curve(SA,names[0]); curve(SB,names[1])
+    for L,e,p,q in ((SA,names[2],names[4],names[6]),(SB,names[3],names[5],names[7])):
+        u,v=inter(D,L); X,Y=T(u,v)
+        wline((X,Y),(ox,Y),True,4); wline((X,Y),(X,oy),True,4)
+        pages[-1].append(('dot',X,Y))
+        label(e,X+30,Y+10,22); label(p,ox-CELL*1.25,Y+10,24); label(q,X-18,oy+CELL*0.8,24)
+    # shift arrow
+    a=T(0.68,0.8); b=T(0.52,0.8)
+    if kind==1: wline(a,b); arrowhead(b,-1,0,14)
+    else: wline(b,a); arrowhead(a,1,0,14)
+    y=oy+CELL*1.6
 first=True
 for sty,text in DOC:
+    if sty=='graph': graph(text); newline(); continue
     xh=STY[sty]
     if sty=='name':
         x0=RIGHT-width(text,xh); put(text,x0,xh,mkdrift()); newline(2); continue
@@ -151,9 +197,13 @@ def svg(items,pi):
     for it in items:
         if it[0]=='g':
             o.append(vary(*it[1:]))
-        else: o.append(f'<path d="{it[1]}" fill="none" stroke="{INK}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>')
+        elif it[0]=='dot': o.append(f'<circle cx="{it[1]:.1f}" cy="{it[2]:.1f}" r="8" fill="{INK}"/>')
+        else:
+            dash=' stroke-dasharray="14 12"' if len(it)>2 and it[2] else ''
+            w=it[3] if len(it)>3 else 5
+            o.append(f'<path d="{it[1]}" fill="none" stroke="{INK}" stroke-width="{w}"{dash} stroke-linecap="round" stroke-linejoin="round"/>')
     o.append('</svg>'); return ''.join(o)
-import os; os.makedirs('hw/out',exist_ok=True)
+os.makedirs(OUT,exist_ok=True)
 for i,p in enumerate(pages):
-    open(f'hw/out/page{i+1}.svg','w').write(svg(p,i))
+    open(f'{OUT}/page{i+1}.svg','w').write(svg(p,i))
 print('pages',len(pages))
