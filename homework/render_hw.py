@@ -54,8 +54,8 @@ def put(text,x0,xh,drift):
         f,W,H,sx,sy,bt,cl,cr=glyph(ch,xh)
         k=random.uniform(0.97,1.03); jy=random.uniform(-0.035,0.035)*xh
         by=y+drift(x)+jy
-        out.append(('g',f,x-cl*sx*k,by-bt*sy*k,sx*k,sy*k))
-        x+=(cr-cl)*sx*k+TRACK*xh*random.uniform(0.8,1.2)
+        out.append(('g',f,x-cl*sx*k,by-bt*sy*k,sx*k,sy*k,W,H,bt,random.random()))
+        x+=(cr-cl)*sx*k+TRACK*xh*random.uniform(0.8,1.2)+(0.12*xh if ch in 'il1' else 0)
     return x
 def mkdrift():
     a=random.uniform(-0.004,0.004); b=random.uniform(-3,3)
@@ -101,6 +101,47 @@ for sty,text in DOC:
     if sty=='p':
         for ln in wrap(text,xh,RIGHT-LEFT-CELL):
             put(ln,LEFT+CELL,xh,mkdrift()); newline()
+import math
+_num=re.compile(r'-?\d*\.?\d+(?:e-?\d+)?')
+def warp_d(d,W,H,R):
+    """smooth random deformation of absolute path coords (pairs)"""
+    A=H*R.uniform(0.018,0.035); B=H*R.uniform(0.012,0.028)
+    fx=R.uniform(0.6,1.4)*2*math.pi/H; fy=R.uniform(0.6,1.4)*2*math.pi/max(W,1)
+    px,py=R.uniform(0,6.3),R.uniform(0,6.3)
+    out=[];buf=[]
+    pos=0; res=[]
+    toks=re.findall(r'[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?',d)
+    nums=[]
+    for t in toks:
+        if t.isalpha():
+            if nums: res.append(nums); nums=[]
+            res.append(t)
+        else: nums.append(float(t))
+    if nums: res.append(nums)
+    s=[]
+    for r in res:
+        if isinstance(r,str): s.append(r); continue
+        q=[]
+        for i in range(0,len(r)-1,2):
+            x,y=r[i],r[i+1]
+            nx=x+A*math.sin(fx*y+px); ny=y+B*math.sin(fy*x+py)
+            q.append(f'{nx:.1f} {ny:.1f}')
+        s.append(' '.join(q))
+    return ''.join(x if x.isalpha() else x+' ' for x in s)
+def vary(f,x,yy,sx,sy,W,H,bt,seed):
+    R=random.Random(seed)
+    body=inner(f)
+    body=re.sub(r' d="([^"]+)"',lambda m:' d="'+warp_d(m.group(1),W,H,R)+'"',body)
+    rot=R.gauss(0,2.2); sh=R.gauss(0,0.06)
+    kx=R.uniform(0.92,1.08); ky=R.uniform(0.95,1.05)
+    # pen pressure: thicken a bit with a stroke of ink colour, vary opacity
+    thick=max(0,R.gauss(0.25,0.45))/max(sx,1e-6)
+    op=R.uniform(0.88,1.0)
+    body=body.replace('fill-rule="evenodd"',f'fill-rule="evenodd" stroke="{INK}" stroke-width="{thick:.2f}" stroke-linejoin="round"',)
+    cx,cy=W/2,bt  # pivot at baseline centre
+    tr=(f'translate({x:.1f} {yy:.1f}) scale({sx:.4f} {sy:.4f}) translate({cx:.1f} {cy:.1f}) '
+        f'rotate({rot:.2f}) matrix({kx:.3f} 0 {sh:.3f} {ky:.3f} 0 0) translate({-cx:.1f} {-cy:.1f})')
+    return f'<g opacity="{op:.2f}" transform="{tr}">{body}</g>'
 def svg(items,pi):
     o=[f'<svg xmlns="http://www.w3.org/2000/svg" width="{PW}" height="{PH}" viewBox="0 0 {PW} {PH}"><rect width="{PW}" height="{PH}" fill="#FDFDFB"/>']
     o.append('<g opacity="0.55">')
@@ -109,7 +150,7 @@ def svg(items,pi):
     o.append('</g>')
     for it in items:
         if it[0]=='g':
-            _,f,x,yy,sx,sy=it; o.append(f'<g transform="translate({x:.1f} {yy:.1f}) scale({sx:.4f} {sy:.4f})">{inner(f)}</g>')
+            o.append(vary(*it[1:]))
         else: o.append(f'<path d="{it[1]}" fill="none" stroke="{INK}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>')
     o.append('</svg>'); return ''.join(o)
 import os; os.makedirs('hw/out',exist_ok=True)
