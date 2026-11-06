@@ -99,20 +99,23 @@ def graph(kind):
     wline(T(0,0),T(0,1.05)); arrowhead(T(0,1.05),0,-1)
     wline(T(0,0),T(1.05,0)); arrowhead(T(1.05,0),1,0)
     label('P',ox-CELL*0.9,oy-Hg*1.0); label('Q',ox+Wg*1.07,oy+CELL*0.75)
-    D=(0.08,0.92,0.9,0.12)
+    D=(0.08,0.92,0.9,0.12) if kind!=3 else (0.3,0.95,0.56,0.08)
     SA=(0.12,0.08,0.8,0.9); SB=(-0.12,0.08,0.56,0.9)   # SB = left-shifted
-    names=('S1','S2','E1','E2','P1','P2','Q1','Q2') if kind==1 else ('S3','S2','E3','E2','P3','P2','Q3','Q2')
+    names={1:('S1','S2','E1','E2','P1','P2','Q1','Q2'),2:('S3','S2','E3','E2','P3','P2','Q3','Q2'),3:('S2','S1','E2','E1','P2','P1','Q2','Q1')}[kind]
     def curve(L,name):
         u1,v1,u2,v2=L
         if u1<0: v1=v1+(v2-v1)*(-u1)/(u2-u1); u1=0
         wline(T(u1,v1),T(u2,v2)); label(name,T(u2,v2)[0]+8,T(u2,v2)[1]+10)
     wline(T(*D[:2]),T(*D[2:])); label('D',T(*D[2:])[0]+8,T(*D[2:])[1]+30)
     curve(SA,names[0]); curve(SB,names[1])
-    for L,e,p,q in ((SA,names[2],names[4],names[6]),(SB,names[3],names[5],names[7])):
+    XS=[T(*inter(D,L))[0] for L in (SA,SB)]
+    gap=abs(XS[0]-XS[1]); push=max(0,(70-gap)/2)
+    for idx,(L,e,p,q) in enumerate(((SA,names[2],names[4],names[6]),(SB,names[3],names[5],names[7]))):
         u,v=inter(D,L); X,Y=T(u,v)
+        qoff=push if idx==0 else -push
         wline((X,Y),(ox,Y),True,4); wline((X,Y),(X,oy),True,4)
         pages[-1].append(('dot',X,Y))
-        label(e,X+30,Y+10,22); label(p,ox-CELL*1.25,Y+10,24); label(q,X-18,oy+CELL*0.8,24)
+        label(e,X+30,Y+10,22); label(p,ox-CELL*1.25,Y+10,24); label(q,X-18+qoff,oy+CELL*0.8,24)
     # shift arrow
     a=T(0.68,0.8); b=T(0.52,0.8)
     if kind==1: wline(a,b); arrowhead(b,-1,0,14)
