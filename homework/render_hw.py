@@ -45,7 +45,7 @@ def width(s,xh): return sum(adv(c,xh) for c in s)-TRACK*xh
 # page geometry (A4 @300dpi)
 PW,PH=2480,3508; CELL=59; LEFT=CELL*4; RIGHT=PW-CELL*3; TOP=CELL*4; PITCH=CELL*2
 BOTTOM=PH-CELL*3
-STY={'name':34,'title':36,'h1':35,'h2':32,'ans':30,'p':30}
+STY={'titleL':36,'name':34,'title':36,'h1':35,'h2':32,'ans':30,'p':30}
 random.seed(7)
 pages=[[]]; y=TOP
 def newline(n=1):
@@ -133,6 +133,8 @@ for sty,text in DOC:
     xh=STY[sty]
     if sty=='name':
         x0=RIGHT-width(text,xh); put(text,x0,xh,mkdrift()); newline(2); continue
+    if sty=='titleL':
+        put(text,LEFT,xh,mkdrift()); newline(2); continue
     if sty=='title':
         for ln in wrap(text,xh,RIGHT-LEFT-CELL*2):
             x0=LEFT+(RIGHT-LEFT-width(ln,xh))/2; x1=put(ln,x0,xh,mkdrift()); newline()
@@ -144,7 +146,9 @@ for sty,text in DOC:
         x1=put(text,LEFT,xh,mkdrift()); underline(LEFT-6,x1+6); newline(); continue
     if sty=='h2':
         if y+PITCH*2>BOTTOM: pages.append([]); globals()['y']=TOP
-        x1=put(text,LEFT+CELL,xh,mkdrift()); underline(LEFT+CELL-4,x1+4); newline(); continue
+        for ln in wrap(text,xh,RIGHT-LEFT-CELL):
+            x1=put(ln,LEFT+CELL,xh,mkdrift()); underline(LEFT+CELL-4,x1+4); newline()
+        continue
     if sty=='ans':
         lab,rest=text.split(' ',1); ind=LEFT+CELL*2
         lines=wrap(rest,xh,RIGHT-ind)
