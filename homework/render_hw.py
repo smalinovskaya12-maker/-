@@ -2,7 +2,8 @@ import json,re,random,sys,math
 sys.path.insert(0,'hw'); import importlib,os; DOC=importlib.import_module(os.environ.get('HWDOC','text')).DOC; OUT=os.environ.get('HWOUT','hw/out')
 FO=json.load(open('font/font.json')); F5=json.load(open('font5/font2.json')); F2=json.load(open('font2/font2.json'))
 SWAP=set('dnptbg')
-F6=json.load(open('font6/font6.json')) if os.environ.get('HAND')=='v6' else None
+FD6={'v6':('font6','font6.json'),'v7':('font7','font7.json')}.get(os.environ.get('HAND'))
+F6=json.load(open(FD6[0]+'/'+FD6[1])) if FD6 else None
 WIDE=set('шщюмжтф')
 def SX(gn):
     g=FO[gn]
@@ -21,7 +22,7 @@ def glyph(ch,xh):
     if F6 and (('a'<=ch<='z') or ('A'<=ch<='Z')):
         key=ch if ch.isupper() else ch+random.choice('12')
         g=F6[key]; s=xh*g['u']
-        return ('font6/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
+        return (FD6[0]+'/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
     if ch in SWAP:
         g=F2[ch]; s=xh*g['u']
         return ('font2/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
