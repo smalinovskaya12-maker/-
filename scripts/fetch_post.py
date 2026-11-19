@@ -67,13 +67,43 @@ def fetch_with_embed(code, out):
         text = re.sub(r"<br\s*/?>", "\n", m.group(1))
         caption = html.unescape(re.sub(r"<[^>]+>", "", text)).strip()
         caption = re.sub(r"^\S+\s*", "", caption, count=1)  # drop leading username
-    img = re.search(r'class="EmbeddedMediaImage"[^>]*src="([^"]+)"', page)
-    if img:
+    urls = carousel_urls(page)
+    if not urls:
+        img = re.search(r'class="EmbeddedMediaImage"[^>]*src="([^"]+)"', page)
+        urls = [html.unescape(img.group(1))] if img else []
+    for n, url in enumerate(urls, 1):
         data = urllib.request.urlopen(
-            urllib.request.Request(html.unescape(img.group(1)), headers={"User-Agent": UA}), timeout=30
+            urllib.request.Request(url, headers={"User-Agent": UA}), timeout=30
         ).read()
-        (out / "slide_1.jpg").write_bytes(data)
+        (out / f"slide_{n}.jpg").write_bytes(data)
     return caption, None
+
+
+def carousel_urls(page):
+    """Image URLs of every carousel slide, from the embed page's contextJSON."""
+    m = re.search(r'"contextJSON":"((?:[^"\\]|\\.)*)"', page)
+    if not m:
+        return []
+    try:
+        data = json.loads(json.loads(f'"{m.group(1)}"'))
+    except ValueError:
+        return []
+
+    def find(o):
+        if isinstance(o, dict):
+            if "edge_sidecar_to_children" in o:
+                return o
+            o = list(o.values())
+        if isinstance(o, list):
+            for v in o:
+                r = find(v)
+                if r:
+                    return r
+
+    media = find(data)
+    if not media:
+        return []
+    return [e["node"]["display_url"] for e in media["edge_sidecar_to_children"]["edges"]]
 
 
 def main():
@@ -93,8 +123,8 @@ def main():
             err = e
             time.sleep(2 * (attempt + 1))
     else:
-        print(f"[instaloader не спрацював: {err}] — беру embed (лише підпис і 1-й слайд)", file=sys.stderr)
-        method = "embed (лише перший слайд)"
+        print(f"[instaloader не спрацював: {err}] — беру embed", file=sys.stderr)
+        method = "embed"
         caption, owner = fetch_with_embed(code, out)
 
     def order(p):
