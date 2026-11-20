@@ -31,7 +31,7 @@ DOC=[
 ('ans','e) Provider A, because it gives a higher consumer surplus ($105 > $100).'),
 ('pagebreak',None),
 ('h1','Part 2'),
-('table',[['No.','Answer','No.','Answer']]+[[str(i),a,str(i+10),b] for i,(a,b) in enumerate(zip('bcccdccdba','abbbbcacda'),1)]),
+('pairs',[(f'{i}. {a}',f'{i+10}. {b}') for i,(a,b) in enumerate(zip('bcccdccdba','abbbbcacda'),1)]),
 ('ans','- Q6: At p = 2, q = 10 - 2(2) = 6. Demand reaches zero at p = 5. CS = 1/2 × 6 × (5 - 2) = 9 = 18/2'),
 ('ans','- Q7: At p = 4, q = 2. CS = 1/2 × 2 × (5 - 4) = $1'),
 ('ans','- Q10: At p = 10, q = -10 + 2(10) = 10. Supply starts at p = 5. PS = 1/2 × 10 × (10 - 5) = 25 = 50/2'),

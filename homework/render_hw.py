@@ -4,6 +4,9 @@ FO=json.load(open('font/font.json')); F5=json.load(open('font5/font2.json')); F2
 SWAP=set('dnptbg')
 FD6={'v6':('font6','font6.json'),'v7':('font7','font7.json')}.get(os.environ.get('HAND'))
 F6=json.load(open(FD6[0]+'/'+FD6[1])) if FD6 else None
+F8=json.load(open('font8/font8.json')); F2B=json.load(open('font2b/font2.json'))
+SRC={'f6':(FD6[0],F6) if FD6 else None,'f8':('font8',F8),'f2b':('font2b',F2B)}
+LASTV={}
 WIDE=set('шщюмжтф')
 def SX(gn):
     g=FO[gn]
@@ -19,10 +22,18 @@ def inner(path):
     return _inner[path]
 def glyph(ch,xh):
     """returns (svgpath, W,H, scale_x, scale_y, bt_px, cl_px, cr_px)"""
-    if F6 and (('a'<=ch<='z') or ('A'<=ch<='Z')):
-        key=ch if ch.isupper() else ch+random.choice('12')
-        g=F6[key]; s=xh*g['u']
-        return (FD6[0]+'/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
+    if F6:
+        if 'a'<=ch<='z': pool=[('f6',ch+'1'),('f6',ch+'2'),('f2b',ch)]
+        elif 'A'<=ch<='Z': pool=[('f6',ch),('f8',ch.lower())]
+        elif ch in F8: pool=[('f8',ch)]
+        else: pool=None
+        if pool:
+            pool=[p for p in pool if p[1] in SRC[p[0]][1]]
+            last=LASTV.get(ch); cand=[p for p in pool if p!=last] or pool
+            src,key=random.choice(cand); LASTV[ch]=(src,key)
+            d,F=SRC[src]; g=F[key]
+            s=xh*g['u']*(1.45 if src=='f8' and ch not in ';' else 1.0)
+            return (d+'/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
     if ch in SWAP:
         g=F2[ch]; s=xh*g['u']
         return ('font2/'+g['file'],g['W'],g['H'],s,s,g['bt'],g['cl'],g['cr'])
@@ -144,6 +155,11 @@ first=True
 for sty,text in DOC:
     if sty=='pagebreak': pages.append([]); globals()['y']=TOP; first=True; continue
     if sty=='graph': graph(text); newline(); continue
+    if sty=='pairs':
+        xh=STY['p']
+        for a,b in text:
+            put(a,LEFT+CELL,xh,mkdrift()); put(b,LEFT+CELL*7,xh,mkdrift()); newline()
+        newline(0.4); continue
     if sty=='table':
         xh=STY['p']; rows=text; nc=len(rows[0])
         cw=[max(width(rw[c],xh) for rw in rows)+CELL*1.2 for c in range(nc)]
