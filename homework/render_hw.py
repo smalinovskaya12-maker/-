@@ -98,6 +98,8 @@ def inter(a,b):
     return x1+t*(x2-x1),y1+t*(y2-y1)
 def graph(kind):
     global y
+    title=None
+    if isinstance(kind,tuple): kind,title=kind
     Hg=CELL*9; Wg=CELL*12
     if y+Hg+CELL>BOTTOM: pages.append([]); y=TOP
     ox=LEFT+CELL*3; oy=y+CELL*0.5+Hg
@@ -126,10 +128,36 @@ def graph(kind):
     a=T(0.68,0.8); b=T(0.52,0.8)
     if kind==1: wline(a,b); arrowhead(b,-1,0,14)
     else: wline(b,a); arrowhead(a,1,0,14)
+    if title:
+        label(title,ox+Wg*0.22,oy-Hg*1.06,26)
+        # consumer surplus (new equilibrium) hatched
+        u2,v2=inter(D,SB)
+        sl=(D[3]-D[1])/(D[2]-D[0]); v0=D[1]-sl*D[0]
+        k=0.03
+        while k<u2-0.01:
+            top=v0+sl*k
+            if top-v2>0.02: wline(T(k,v2),T(k,top),False,3)
+            k+=0.035
+        label('CS',T(0.05,v2+(v0-v2)*0.45)[0]-CELL*1.6,T(0,v2+(v0-v2)*0.45)[1],22)
     y=oy+CELL*1.6
 first=True
 for sty,text in DOC:
+    if sty=='pagebreak': pages.append([]); globals()['y']=TOP; first=True; continue
     if sty=='graph': graph(text); newline(); continue
+    if sty=='table':
+        xh=STY['p']; rows=text; nc=len(rows[0])
+        cw=[max(width(rw[c],xh) for rw in rows)+CELL*1.2 for c in range(nc)]
+        x0=LEFT+CELL; RH=PITCH
+        if y+RH*(len(rows)+1)>BOTTOM: pages.append([]); globals()['y']=TOP
+        top=y-RH*0.72; xs=[x0]
+        for w in cw: xs.append(xs[-1]+w)
+        for i,rw in enumerate(rows):
+            for c,cell in enumerate(rw): put(cell,xs[c]+CELL*0.5,xh,mkdrift())
+            newline()
+        bot=top+RH*len(rows)
+        for i in range(len(rows)+1): wline((xs[0]-4,top+RH*i),(xs[-1]+4,top+RH*i),False,4)
+        for xv in xs: wline((xv,top-4),(xv,bot+4),False,4)
+        newline(0.4); continue
     xh=STY[sty]
     if sty=='name':
         x0=RIGHT-width(text,xh); put(text,x0,xh,mkdrift()); newline(2); continue
